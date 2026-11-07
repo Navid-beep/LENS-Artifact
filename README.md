@@ -1,7 +1,7 @@
 
 
 
-# <LENS: Leakage-contract Evaluation and aNalysis Suite>
+# LENS: Leakage-contract Evaluation and aNalysis Suite
 
 <LENS> is a tool for verifying whether a processor design, written in (System)Verilog, satisfies a given Seq-CT leakage contract.
 
