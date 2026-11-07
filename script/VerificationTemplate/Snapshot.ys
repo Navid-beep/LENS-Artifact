@@ -1,0 +1,14 @@
+plugin -i slang
+read_slang --allow-use-before-declare CONTRACT_NAME_MODE_memmapped.v
+hierarchy -check -top MITER_TOP
+proc -norom
+setattr -set keep 1 w:*_predicate w:pred_conjunction w:commit_deviation w:addr_deviation
+async2sync
+formalff -clk2ff
+setundef -undriven -anyseq
+#setundef -undriven -anyconst
+rename -witness
+
+opt_expr -keepdc
+opt_clean
+write_rtlil CONTRACT_NAME_MODE_all_pred.il

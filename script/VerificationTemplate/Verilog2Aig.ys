@@ -1,0 +1,15 @@
+plugin -i slang
+read_slang --allow-use-before-declare CONTRACT_NAME_MODE_memmapped.v
+hierarchy -check -top MITER_TOP
+proc -norom
+async2sync
+formalff -clk2ff
+setundef -undriven -anyseq
+rename -witness
+opt_clean
+opt -keepdc -fast
+write_rtlil CONTRACT_NAME_MODE_pre_aiger.il      # NEW: snapshot for replay
+techmap
+dffunmap
+abc -g AND -fast
+write_aiger -I -B -zinit -no-startoffset -map CONTRACT_NAME_MODE.aim -ywmap CONTRACT_NAME_MODE.ywa CONTRACT_NAME_MODE.aig

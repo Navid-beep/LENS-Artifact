@@ -1,0 +1,23 @@
+
+[options]
+mode prove
+multiclock on
+
+
+[engines]
+smtbmc 
+
+[script]
+plugin -i slang 
+read_slang --allow-use-before-declare MODULES
+hierarchy -top MITER_TOP
+proc -norom -noopt
+flatten
+opt
+#opt_clean
+#opt_merge
+check
+
+[files]
+
+FILEPATH

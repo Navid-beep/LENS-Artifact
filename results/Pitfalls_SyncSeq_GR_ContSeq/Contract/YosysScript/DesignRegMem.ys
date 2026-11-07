@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang -Wno-duplicate-definition --allow-use-before-declare  ../src/PitfallsMachine/memd.v ../src/PitfallsMachine/cpu_ooo.v ../src/PitfallsMachine/rf.v ../src/PitfallsMachine/param.v ../src/PitfallsMachine/decode.v ../src/PitfallsMachine/rob_nda.v ../src/PitfallsMachine/execute.v ../src/PitfallsMachine/memi.v ../src/PitfallsMachine/renameTable.v  
+hierarchy -top cpu_ooo -keep_positionals
+proc -norom -noopt
+reg_mem_init cpu_ooo results/Pitfalls_SyncSeq_GR_ContSeq/Hierarchy
+write_verilog results/Pitfalls_SyncSeq_GR_ContSeq/Hierarchy/duv_structure.v

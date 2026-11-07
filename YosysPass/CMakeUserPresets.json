@@ -1,0 +1,15 @@
+{
+   "version": 1,
+   "configurePresets": [
+      {
+         "name": "default",
+         "binaryDir": "build",
+         "generator": "Unix Makefiles",
+         "cacheVariables": {
+            "CMAKE_C_COMPILER": "clang",
+            "CMAKE_CXX_COMPILER": "clang++",
+            "YOSYS_COMPILER_LAUNCHER": "ccache"
+         }
+      }
+   ]
+}

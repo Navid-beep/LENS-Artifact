@@ -1,0 +1,16 @@
+
+plugin -i slang
+read_slang --allow-use-before-declare FILEPATH
+hierarchy -check -top MITER_TOP
+proc -norom
+flatten
+
+# AIGER has no memories: turn every memory into plain flip-flops
+memory -nomap -nordff
+memory_map
+opt_clean
+
+# Stop here. No async2sync/formalff/setundef/techmap/dffunmap:
+#  - FFs keep their clock      -> written as always @(posedge clk)
+#  - undriven nets stay undriven -> become free inputs in script 2
+write_verilog -noattr CONTRACT_NAME_MODE_memmapped.v

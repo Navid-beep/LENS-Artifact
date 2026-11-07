@@ -1,0 +1,2 @@
+read_rtlil CONTRACT_NAME_MODE_pre_aiger.il
+sim -r CONTRACT_PATH_aiw.yw -vcd CONTRACT_PATH.vcd -hdlname

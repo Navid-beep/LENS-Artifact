@@ -1,0 +1,31 @@
+
+[options]
+mode prove
+MULTI_CLOCK_DOMAIN
+#vcd_sim on
+aigsmt none
+
+
+[engines]
+aiger rIC3
+
+[script]
+plugin -i slang 
+read_slang --allow-use-before-declare MODULES
+hierarchy -top MITER_TOP
+proc -norom -noopt
+flatten 
+async2sync
+dffunmap
+opt_clean
+opt_merge
+check
+
+write_verilog out_rIC3.v
+
+
+
+
+[files]
+
+FILEPATH

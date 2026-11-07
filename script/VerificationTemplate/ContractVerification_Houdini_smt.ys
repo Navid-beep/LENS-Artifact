@@ -1,0 +1,28 @@
+# yosys-smtbmc flow, run ONCE per mode (replaces ContractVerification_Houdini.ys + Snapshot.ys).
+# Memories are NOT mapped to flip-flops: write_smt2 keeps them as SMT arrays, so a memory without
+# write ports (e.g. the Sodor instruction lanes) is one free, constant array read consistently by every port.
+
+plugin -i slang
+read_slang --allow-use-before-declare FILEPATH
+hierarchy -check -top MITER_TOP
+proc -norom
+flatten
+
+# keep memories as $mem cells; -nordff: no read-port FF merging (no hidden copies of address registers)
+#memory -nomap -nordff
+#opt_clean
+
+#opt -keepdc -fast
+opt_expr -keepdc
+opt_clean
+setattr -set keep 1 w:*_predicate w:pred_conjunction w:*_deviation
+
+async2sync
+dffunmap
+
+#setundef -undriven -anyseq
+
+#opt_clean
+#opt -keepdc -fast
+
+write_rtlil CONTRACT_NAME_MODE_all_pred_smt.il

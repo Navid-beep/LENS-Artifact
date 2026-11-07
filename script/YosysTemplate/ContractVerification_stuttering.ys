@@ -1,0 +1,38 @@
+
+plugin -i slang 
+plugin -i YOSYS_PASS_PATH/MiterStutteringPass.so 
+plugin -i YOSYS_PASS_PATH/stuttering.so
+plugin -i YOSYS_PASS_PATH/RegMemInitPass.so
+
+#read_verilog -sv MACRO VERILOG_FILES 
+read_slang --allow-use-before-declare MACRO VERILOG_FILES 
+hierarchy -top TOPMODULE
+proc -norom -noopt
+bwmuxmap
+write_verilog VERILOG_MITER_OUT/single_design_verilog.v 
+add -input stuttering_signal 1
+flatten TOPMODULE
+stuttering TOPMODULE stuttering_signal 
+
+miter -equiv TOPMODULE TOPMODULE MITER_MODULE
+hierarchy -top MITER_MODULE
+proc -norom -noopt
+cd MITER_MODULE
+delete -input in_stuttering_signal
+cd ..
+
+# test
+
+select -set strip MITER_MODULE/i:* MITER_MODULE/w:in_CLOCK %d
+setattr -set keep 1 @strip
+delete -port @strip
+setundef -undriven -zero @strip      # all of them to 0
+
+# end test
+miter_stuttering MITER_MODULE stuttering_signal C_valid
+flatten 
+async2sync
+dffunmap
+bwmuxmap
+reg_mem_init MITER_MODULE .
+write_verilog VERILOG_MITER_OUT/contractVerification_verilog.v 

@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang -Wno-duplicate-definition --allow-use-before-declare  ../src/simpleooo_cache_secure/memd.v ../src/simpleooo_cache_secure/cpu_ooo.v ../src/simpleooo_cache_secure/rf.v ../src/simpleooo_cache_secure/param.v ../src/simpleooo_cache_secure/decode.v ../src/simpleooo_cache_secure/rob_nda.v ../src/simpleooo_cache_secure/execute.v ../src/simpleooo_cache_secure/memi.v ../src/simpleooo_cache_secure/renameTable.v  
+hierarchy -top cpu_ooo -keep_positionals
+proc -norom -noopt
+reg_mem_init cpu_ooo results/UASC_Houdini_SOOO_Cache_Sec_IB_rIC3_regs/Hierarchy
+write_verilog results/UASC_Houdini_SOOO_Cache_Sec_IB_rIC3_regs/Hierarchy/duv_structure.v

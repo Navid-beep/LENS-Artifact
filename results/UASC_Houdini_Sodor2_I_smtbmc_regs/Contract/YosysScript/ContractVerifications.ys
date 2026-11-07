@@ -1,0 +1,38 @@
+
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+
+#read_verilog -sv  ../src/Sodor2/sodor2.v  
+read_slang --allow-use-before-declare  ../src/Sodor2/sodor2.v  
+hierarchy -top SodorInternalTile_2stage
+proc -norom -noopt
+bwmuxmap
+write_verilog results/UASC_Houdini_Sodor2_I_smtbmc_regs/Contract/Verilog/single_design_verilog.v 
+add -input stuttering_signal 1
+flatten SodorInternalTile_2stage
+stuttering SodorInternalTile_2stage stuttering_signal 
+
+miter -equiv SodorInternalTile_2stage SodorInternalTile_2stage miter_SodorInternalTile_2stage
+hierarchy -top miter_SodorInternalTile_2stage
+proc -norom -noopt
+cd miter_SodorInternalTile_2stage
+delete -input in_stuttering_signal
+cd ..
+
+# test
+
+select -set strip miter_SodorInternalTile_2stage/i:* miter_SodorInternalTile_2stage/w:in_clock %d
+setattr -set keep 1 @strip
+delete -port @strip
+setundef -undriven -zero @strip      # all of them to 0
+
+# end test
+miter_stuttering miter_SodorInternalTile_2stage stuttering_signal C_valid
+flatten 
+async2sync
+dffunmap
+bwmuxmap
+reg_mem_init miter_SodorInternalTile_2stage .
+write_verilog results/UASC_Houdini_Sodor2_I_smtbmc_regs/Contract/Verilog/contractVerification_verilog.v 

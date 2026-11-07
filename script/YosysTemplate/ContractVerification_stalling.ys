@@ -1,0 +1,30 @@
+plugin -i slang 
+plugin -i YOSYS_PASS_PATH/Stalling.so 
+plugin -i YOSYS_PASS_PATH/RegMemInitPass.so
+
+
+#read_verilog -sv MACRO VERILOG_FILES 
+read_slang --allow-use-before-declare MACRO VERILOG_FILES 
+hierarchy -top TOPMODULE
+proc -norom -noopt
+flatten TOPMODULE 
+bwmuxmap
+write_verilog VERILOG_MITER_OUT/single_design_verilog.v 
+miter -equiv TOPMODULE TOPMODULE MITER_MODULE
+cd MITER_MODULE
+cd ..
+
+select -set strip MITER_MODULE/i:* MITER_MODULE/w:in_CLOCK %d
+setattr -set keep 1 @strip
+delete -port @strip
+setundef -undriven -zero @strip      # all of them to 0
+
+stalling TOPMODULE CLOCK stall_signal
+hierarchy -top MITER_MODULE
+proc -norom -noopt
+flatten #-nocleanup MITER_MODULE 
+async2sync
+dffunmap
+reg_mem_init MITER_MODULE .
+bwmuxmap
+write_verilog VERILOG_MITER_OUT/contractVerification_verilog.v 

@@ -1,0 +1,265 @@
+avrPath: ''
+contract:
+  AttackerObservation:
+  - condition: []
+    dataSignal: Core_2stage.DatPath_2stage.retire
+    module: DatPath_2stage
+    width: 1
+  - condition:
+    - condition: 1
+      dataSignal: Core_2stage.CtlPath_2stage.io_dmem_req_valid_ctr
+      module: Core_2stage
+      width: 1
+    dataSignal: Core_2stage.DatPath_2stage.io_dmem_req_bits_addr_ctr
+    module: Core_2stage
+  Predicate: []
+  ProgramEquivalence:
+  - condition: []
+    dataSignal: core_io_imem_resp_bits_data
+    module: AsyncScratchPadMemory_2stage
+    width: 32
+  contractObservation:
+  - condition:
+    - condition: 1
+      dataSignal: Core_2stage.CtlPath_2stage.branch_inst
+      module: SodorInternalTile_2stage
+      width: 1
+    dataSignal: Core_2stage.CtlPath_2stage.branch_taken
+    module: Core_2stage
+    width: 32
+  - condition: []
+    dataSignal: Core_2stage.DatPath_2stage.pc_retire
+    module: DatPath_2stage
+  - condition: []
+    dataSignal: AsyncScratchPadMemory_2stage.instr_ctr
+    module: AsyncScratchPadMemory_2stage
+  retirementPredicate:
+    condition: []
+    dataSignal: Core_2stage.DatPath_2stage.retire
+    module: DatPath_2stage
+    width: 1
+designMacro: []
+designSrc: ../src/Sodor2
+designTop: SodorInternalTile_2stage
+experimentalParameters:
+  Hierarchy: false
+  HoudiniExclude:
+  - AsyncScratchPadMemory_2stage.mem_0_0
+  - AsyncScratchPadMemory_2stage.mem_1_0
+  - AsyncScratchPadMemory_2stage.mem_2_0
+  - AsyncScratchPadMemory_2stage.mem_3_0
+  - AsyncScratchPadMemory_2stage.mem_0_1
+  - AsyncScratchPadMemory_2stage.mem_1_1
+  - AsyncScratchPadMemory_2stage.mem_2_1
+  - AsyncScratchPadMemory_2stage.mem_3_1
+  PipelineDrain: in-order
+  SMTBMCOptions: ''
+  SMTBMCPath: yosys-smtbmc
+  SMTSolver: yices
+  Solver: smtbmc
+  Synch_level: RegMemStuttering
+  Synch_method: direct
+  Verification: Houdini
+  k: 1
+functionalInvariant:
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_imem_resp_bits_data
+  gateInvariant: ( (\gate.Core_2stage.DatPath_2stage.io_imem_resp_bits_data == 32'h4033
+    ) == 0 )
+  goldInvariant: ( (\gold.Core_2stage.DatPath_2stage.io_imem_resp_bits_data == 32'h4033
+    ) == 0 )
+  invariant: ( (Core_2stage.DatPath_2stage.io_imem_resp_bits_data == 32'h4033 ) ==
+    0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.execute_reg
+  - Core_2stage.DatPath_2stage.exe_reg_inst
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.execute_reg == 0 || ( \gate.Core_2stage.DatPath_2stage.exe_reg_inst
+    == 32'h4033 ) == 0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.execute_reg == 0 || ( \gold.Core_2stage.DatPath_2stage.exe_reg_inst
+    == 32'h4033 ) == 0 )
+  invariant: ( Core_2stage.DatPath_2stage.execute_reg == 0 || ( Core_2stage.DatPath_2stage.exe_reg_inst
+    == 32'h4033 ) == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_ctl_if_kill
+  - Core_2stage.DatPath_2stage.if_reg_pc
+  - Core_2stage.DatPath_2stage.exe_reg_pc
+  gateInvariant: ( ( \gate.Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 ) || ( \gate.Core_2stage.DatPath_2stage.if_reg_pc
+    == \gate.Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  goldInvariant: ( ( \gold.Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 ) || ( \gold.Core_2stage.DatPath_2stage.if_reg_pc
+    == \gold.Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 ) || ( Core_2stage.DatPath_2stage.if_reg_pc
+    == Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.exe_reg_pc
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.exe_reg_pc [1:0] == 0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.exe_reg_pc [1:0] == 0 )
+  invariant: ( Core_2stage.DatPath_2stage.exe_reg_pc [1:0] == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_ctl_if_kill_r
+  - Core_2stage.DatPath_2stage.exe_reg_pc
+  gateInvariant: ( ( ! \gate.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gate.Core_2stage.DatPath_2stage.exe_reg_pc
+    == 32'h0 ) )
+  goldInvariant: ( ( ! \gold.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gold.Core_2stage.DatPath_2stage.exe_reg_pc
+    == 32'h0 ) )
+  invariant: ( ( ! Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.exe_reg_pc
+    == 32'h0 ) )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.if_reg_pc
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.if_reg_pc [1:0] == 0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.if_reg_pc [1:0] == 0 )
+  invariant: ( Core_2stage.DatPath_2stage.if_reg_pc [1:0] == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_ctl_if_kill_r
+  - Core_2stage.DatPath_2stage.if_reg_pc
+  - Core_2stage.DatPath_2stage.exe_reg_pc
+  gateInvariant: ( ( \gate.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gate.Core_2stage.DatPath_2stage.if_reg_pc
+    == \gate.Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  goldInvariant: ( ( \gold.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gold.Core_2stage.DatPath_2stage.if_reg_pc
+    == \gold.Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.if_reg_pc
+    == Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.if_inst_buffer_valid
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.if_inst_buffer_valid == 0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.if_inst_buffer_valid == 0 )
+  invariant: ( Core_2stage.DatPath_2stage.if_inst_buffer_valid == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_ctl_if_kill
+  - Core_2stage.DatPath_2stage.execute_reg
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 || \gate.Core_2stage.DatPath_2stage.execute_reg
+    == 1 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 || \gold.Core_2stage.DatPath_2stage.execute_reg
+    == 1 )
+  invariant: ( Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 || Core_2stage.DatPath_2stage.execute_reg
+    == 1 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_dat_inst_misaligned
+  gateInvariant: \gate.Core_2stage.DatPath_2stage.io_dat_inst_misaligned == 0
+  goldInvariant: \gold.Core_2stage.DatPath_2stage.io_dat_inst_misaligned == 0
+  invariant: Core_2stage.DatPath_2stage.io_dat_inst_misaligned == 0
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_dat_data_misaligned
+  gateInvariant: \gate.Core_2stage.DatPath_2stage.io_dat_data_misaligned == 0
+  goldInvariant: \gold.Core_2stage.DatPath_2stage.io_dat_data_misaligned == 0
+  invariant: Core_2stage.DatPath_2stage.io_dat_data_misaligned == 0
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.io_ctl_if_kill_r
+  - Core_2stage.DatPath_2stage.exe_reg_inst
+  - AsyncScratchPadMemory_2stage.instr_exe
+  gateInvariant: ( ( \gate.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gate.Core_2stage.DatPath_2stage.exe_reg_inst
+    == \gate.AsyncScratchPadMemory_2stage.instr_exe ) )
+  goldInvariant: ( ( \gold.Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( \gold.Core_2stage.DatPath_2stage.exe_reg_inst
+    == \gold.AsyncScratchPadMemory_2stage.instr_exe ) )
+  invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.exe_reg_inst
+    == AsyncScratchPadMemory_2stage.instr_exe ) )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.exe_reg_inst
+  gateInvariant: ( (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h37 )
+    || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h17 ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h6f ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h67
+    ) ||(\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h63 ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h3 ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h23
+    ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h13 ) || (\gate.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h33 && (\gate.Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h0
+    || \gate.Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h20 ) ) )
+  goldInvariant: ( (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h37 )
+    || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h17 ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h6f ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h67
+    ) ||(\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h63 ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h3 ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h23
+    ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h13 ) || (\gold.Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h33 && (\gold.Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h0
+    || \gold.Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h20 ) ) )
+  invariant: ( (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h37 ) || (Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h17 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h6f )
+    || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h67 ) ||(Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h63 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h3 ) ||
+    (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h23 ) || (Core_2stage.DatPath_2stage.exe_reg_inst
+    [6:0] == 7'h13 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h33 &&
+    (Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h0 || Core_2stage.DatPath_2stage.exe_reg_inst
+    [31:25] == 7'h20 ) ) )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.CtlPath_2stage.io_ctl_exception
+  gateInvariant: ( \gate.Core_2stage.CtlPath_2stage.io_ctl_exception == 0 )
+  goldInvariant: ( \gold.Core_2stage.CtlPath_2stage.io_ctl_exception == 0 )
+  invariant: ( Core_2stage.CtlPath_2stage.io_ctl_exception == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret == 0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret == 0 )
+  invariant: ( Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret == 0 )
+  module: null
+- condition: []
+  dataSignals:
+  - Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt
+  gateInvariant: ( \gate.Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt ==
+    0 )
+  goldInvariant: ( \gold.Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt ==
+    0 )
+  invariant: ( Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt == 0 )
+  module: null
+instructionSet: user/ISA/simpleoooISA.yaml
+microArchitecture:
+  COMMIT:
+    commitBandWidth: 1
+    commitNumSignal:
+    - Core_2stage.DatPath_2stage.pc_retire
+  ROB:
+    entries: 2
+    headSignal: ROB_head
+    isROB: false
+    lookahead: 2
+    module: rob
+    tailSignal: ROB_tail
+  bypassMem:
+    Condition: true
+    Module: AsyncScratchPadMemory_2stage
+    dataSignal: mem_
+  clock: clock
+  dataMemory:
+    addrSize: 4
+    dataSignal: memd
+    dataSize: 4
+    module: AsyncScratchPadMemory_2stage
+    secret: 2
+  instructionMemory:
+    addrSize: 2
+    dataSignal: mem_*
+    instrSize: 6
+    module: AsyncScratchPadMemory_2stage
+  reset: reset
+  rollbackSignal:
+    dataSignal: Core_2stage.DatPath_2stage.io_ctl_if_kill
+    module: DatPath_2stage
+programFile: positiveExample.mem
+secretAddressFile: secret.mem
+targetPath: results/UASC_Houdini_Sodor2_IB_smtbmc_regs

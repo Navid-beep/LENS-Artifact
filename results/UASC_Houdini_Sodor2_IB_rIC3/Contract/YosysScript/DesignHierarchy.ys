@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang --single-unit --allow-use-before-declare --allow-merging-ansi-ports \
+           --best-effort-hierarchy --error-limit=0  ../src/Sodor2/sodor2.v #read_verilog -sv -formal   ../src/Sodor2/sodor2.v  
+hierarchy -top SodorInternalTile_2stage -keep_positionals
+proc -norom -noopt
+write_json results/UASC_Houdini_Sodor2_IB_rIC3/Hierarchy/duv_structure.json

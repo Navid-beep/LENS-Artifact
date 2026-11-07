@@ -1,0 +1,326 @@
+designSrc: "src/simpleooo_cache_secure" # Path to all your src design files
+designTop: "cpu_ooo"
+instructionSet: "user/ISA/simpleoooISA.yaml"
+targetPath: "results/UASC_Houdini_SOOO_Cache_Sec_IB_rIC3_regs"
+
+programFile: "positiveExample.mem"
+secretAddressFile: "secret.mem"
+
+avrPath: ""
+
+vvp: "vvp"
+iverilogPath: "iverilog"
+
+
+designMacro: []   # Place the design that will be used with the Yosys script (if any or if relevant)
+
+experimentalParameters:
+  Synch_level: RegMemStuttering  # Select bewteen [HighLevelClock(stall), RegMemStuttering(stutter)]
+  Synch_method: direct   # Select between [indirect(shadowLogic), direct(leave)]
+  PipelineDrain: in-order # Select between [out-of-order, in-order]
+  Verification: Houdini  # Select between [rIC3, AVR, Houdini]) -- /!\ For houdini, make sure the lookahead in ROB section is accurate
+  k: 1 # depth of the k-induction
+  Hierarchy: true
+  # HoudiniWires: true
+  HoudiniExclude: ['memd_instance\.memd', 'memi_instance\.array_mem']
+
+contract:
+
+  contractObservation:
+    # Contract discards deviation of the source observation
+    - module: cpu_ooo
+      dataSignal: C_taken
+      width: 1
+      condition:
+        - module: cpu_ooo
+          dataSignal: C_is_br
+          condition: 1
+          width: 1
+
+  ProgramEquivalence:
+    - module: memi
+      dataSignal: array_mem
+      width: 11
+      range: 8
+      condition: []
+
+# Note that for predicate, you must put the complete path
+  Predicate: 
+    - name: rename_points_to_live_writer
+      range: 4
+      compare: equal_and_both
+      invariant: "! {cp}.renameTable_instance.renameTB_valid [{i}] || ( {cp}.rob_instance.ROB_state [ {cp}.renameTable_instance.renameTB_ROBlink [{i}] ] != 0 && {cp}.rob_instance.ROB_wen [ {cp}.renameTable_instance.renameTB_ROBlink [{i}] ] && {cp}.rob_instance.ROB_rd [ {cp}.renameTable_instance.renameTB_ROBlink [{i}] ] == 2'd{i} )"
+    - name: rob_next_pc_finished
+      range: 4
+      compare: equal_and_both
+      invariant: "( {cp}.rob_instance.ROB_state [{i}] != 3 && {cp}.rob_instance.ROB_state [{i}] != 4 && {cp}.rob_instance.ROB_state [{i}] != 5 ) || {cp}.rob_instance.ROB_next_pc [{i}] == ( ( {cp}.rob_instance.ROB_is_br [{i}] && {cp}.rob_instance.ROB_taken [{i}] ) ? ( {cp}.rob_instance.ROB_pc [{i}] + {cp}.rob_instance.ROB_rs1_br_offset [{i}] ) : ( {cp}.rob_instance.ROB_pc [{i}] + 3'd1 ) )"
+    # Fetch predicts not-taken (F_taken is tied to 0 in this design)
+    - name: rob_no_prediction
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_predicted_taken == 4'd0"
+
+    # Only loads occupy the miss states 3/4
+    - name: rob_miss_states_load
+      range: 4
+      compare: equal_and_both
+      invariant: "( {cp}.rob_instance.ROB_state [{i}] != 3 && {cp}.rob_instance.ROB_state [{i}] != 4 ) || {cp}.rob_instance.ROB_op [{i}] == 3'd3"
+
+    # (1b) mitigation: a load past issue (state 2/3/4) is at the ROB head
+    - name: rob_ld_issued_at_head
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_op [{i}] != 3'd3 || ( {cp}.rob_instance.ROB_state [{i}] != 2 && {cp}.rob_instance.ROB_state [{i}] != 3 && {cp}.rob_instance.ROB_state [{i}] != 4 ) || {cp}.rob_instance.ROB_head == 2'd{i}"
+
+    # (2) a load in the miss states missed, and the cache is not filled until it leaves state 4
+    - name: rob_miss_addr_not_cached
+      range: 4
+      compare: equal_and_both
+      invariant: "( {cp}.rob_instance.ROB_state [{i}] != 3 && {cp}.rob_instance.ROB_state [{i}] != 4 ) || {cp}.rob_instance.ROB_mem_addr [{i}] != {cp}.rob_instance.cached_addr"
+
+    # (3) a consumer with a pending operand link has not issued, and its producer is still in the ROB
+    - name: rob_rs1_pending_link
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_state [{i}] == 0 || ! {cp}.rob_instance.ROB_rs1_stall [{i}] || ( {cp}.rob_instance.ROB_state [{i}] == 1 && {cp}.rob_instance.ROB_state [ {cp}.rob_instance.ROB_rs1_ROBlink [{i}] ] != 0 )"
+    - name: rob_rs2_pending_link
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_state [{i}] == 0 || ! {cp}.rob_instance.ROB_rs2_stall [{i}] || ( {cp}.rob_instance.ROB_state [{i}] == 1 && {cp}.rob_instance.ROB_state [ {cp}.rob_instance.ROB_rs2_ROBlink [{i}] ] != 0 )"
+# End of RawInvariants
+
+    - name: cached_addr_equiv
+      invariant: "{cp}.rob_instance.cached_addr"
+      compare: equal
+      
+    - name: ld_ready_equiv
+      range: 4
+      compare: equal
+      invariant: "{cp}.rob_instance.ROB_op [{i}] == 3'd3 && ( {cp}.rob_instance.ROB_state [{i}] == 3'd2 || {cp}.rob_instance.ROB_state [{i}] == 3'd5 )"
+    
+    - name: ld_ready_only_at_head
+      range: 4
+      compare: equal_and_both
+      invariant: "!( {cp}.rob_instance.ROB_op [{i}] == 3'd3 && ( {cp}.rob_instance.ROB_state [{i}] == 3'd2 || {cp}.rob_instance.ROB_state [{i}] == 3'd5 ) ) || {cp}.rob_instance.ROB_head == 3'd{i}"
+    
+# Circular buffer ROB: an entry is occupied iff it is inside the head..tail window
+    - name: rob_window_occupancy
+      range: 4
+      compare: equal_and_both
+      invariant: "( !( ( 3'd{i} - {cp}.rob_instance.ROB_head ) < ( {cp}.rob_instance.ROB_tail - {cp}.rob_instance.ROB_head ) ) || {cp}.rob_instance.ROB_state [{i}] != 0 ) && ( ( ( 3'd{i} - {cp}.rob_instance.ROB_head ) < ( {cp}.rob_instance.ROB_tail - {cp}.rob_instance.ROB_head ) ) || {cp}.rob_instance.ROB_state [{i}] == 0 || ( {cp}.rob_instance.ROB_tail == {cp}.rob_instance.ROB_head && {cp}.rob_instance.ROB_state [ {cp}.rob_instance.ROB_head ] != 0 ) ) && ( {cp}.rob_instance.ROB_tail != {cp}.rob_instance.ROB_head || ( {cp}.rob_instance.ROB_state [{i}] != 0 ) == ( {cp}.rob_instance.ROB_state [ {cp}.rob_instance.ROB_head ] != 0 ) )"
+
+    # Avoid instructions waiting for themselves: a pending link points to an older entry
+    - name: rob_link_older
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_state [{i}] == 0 || ( ( ! {cp}.rob_instance.ROB_rs1_stall [{i}] || ( ( {cp}.rob_instance.ROB_rs1_ROBlink [{i}] - {cp}.rob_instance.ROB_head ) < ( 3'd{i} - {cp}.rob_instance.ROB_head ) ) ) && ( ! {cp}.rob_instance.ROB_rs2_stall [{i}] || ( ( {cp}.rob_instance.ROB_rs2_ROBlink [{i}] - {cp}.rob_instance.ROB_head ) < ( 3'd{i} - {cp}.rob_instance.ROB_head ) ) ) )"
+
+    # Memory access bits are legal
+    - name: rob_mem_bits_legal
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_state [{i}] == 0 || ( {cp}.rob_instance.ROB_mem_valid [{i}] == ( {cp}.rob_instance.ROB_op [{i}] == 3'd3 || {cp}.rob_instance.ROB_op [{i}] == 3'd4 ) && {cp}.rob_instance.ROB_mem_rdwt [{i}] == ( {cp}.rob_instance.ROB_op [{i}] == 3'd3 ) )"
+
+    # Control flags are consistent with the opcode
+    - name: rob_ctrl_flags_opcode
+      range: 4
+      compare: equal_and_both
+      invariant: "{cp}.rob_instance.ROB_state [{i}] == 0 || ( {cp}.rob_instance.ROB_is_br [{i}] == ( {cp}.rob_instance.ROB_op [{i}] == 3'd5 ) && {cp}.rob_instance.ROB_wen [{i}] == ( {cp}.rob_instance.ROB_op [{i}] <= 3'd3 ) && {cp}.rob_instance.ROB_rd_data_use_execute [{i}] == ( {cp}.rob_instance.ROB_op [{i}] <= 3'd2 ) )"
+
+  AttackerObservation:
+  # Commit Observation
+    - module: rob
+      dataSignal: C_valid
+      width: 1
+      name: commit
+      condition: []
+
+
+  retirementPredicate:
+    # Instruction Retirement Signal
+      module: cpu_ooo
+      dataSignal: C_valid
+      width: 1
+      condition: []
+
+functionalInvariant: 
+     - module: cpu_ooo  
+       dataSignals: [F_opcode]     # List of all signals present in the functional invariant
+       invariant: F_opcode == 0 || F_opcode == 1 || F_opcode == 2 || F_opcode == 3 || F_opcode == 4 || F_opcode == 5  # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: rob
+       dataSignals: [ROB_state, ROB_op]
+       invariant: "ROB_state [0] == 0 || ROB_op [0] <= 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state, ROB_op]
+       invariant: "ROB_state [1] == 0 || ROB_op [1] <= 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state, ROB_op]
+       invariant: "ROB_state [2] == 0 || ROB_op [2] <= 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state, ROB_op]
+       invariant: "ROB_state [3] == 0 || ROB_op [3] <= 5"
+       condition: []
+
+# ROB Legal State
+
+     - module: rob
+       dataSignals: [ROB_state]
+       invariant: "ROB_state [0] == 0 || ROB_state [0] == 1 || ROB_state [0] == 2 || ROB_state [0] == 3 || ROB_state [0] == 4 || ROB_state [0] == 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state]
+       invariant: "ROB_state [1] == 0 || ROB_state [1] == 1 || ROB_state [1] == 2 || ROB_state [1] == 3 || ROB_state [1] == 4 || ROB_state [1] == 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state]
+       invariant: "ROB_state [2] == 0 || ROB_state [2] == 1 || ROB_state [2] == 2 || ROB_state [2] == 3 || ROB_state [2] == 4 || ROB_state [2] == 5"
+       condition: []
+
+     - module: rob
+       dataSignals: [ROB_state]
+       invariant: "ROB_state [3] == 0 || ROB_state [3] == 1 || ROB_state [3] == 2 || ROB_state [3] == 3 || ROB_state [3] == 4 || ROB_state [3] == 5"
+       condition: []
+
+
+# Circular Buffer ROB
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_tail]
+#        invariant: "( !( ( 3'd0 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [0] != 0 ) && ( ( ( 3'd0 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [0] == 0 || ( ROB_tail == ROB_head && ROB_state [ ROB_head ] != 0 ) ) && ( ROB_tail != ROB_head || ( ROB_state [0] != 0 ) == ( ROB_state [ ROB_head ] != 0 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_tail]
+#        invariant: "( !( ( 3'd1 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [1] != 0 ) && ( ( ( 3'd1 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [1] == 0 || ( ROB_tail == ROB_head && ROB_state [ ROB_head ] != 0 ) ) && ( ROB_tail != ROB_head || ( ROB_state [1] != 0 ) == ( ROB_state [ ROB_head ] != 0 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_tail]
+#        invariant: "( !( ( 3'd2 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [2] != 0 ) && ( ( ( 3'd2 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [2] == 0 || ( ROB_tail == ROB_head && ROB_state [ ROB_head ] != 0 ) ) && ( ROB_tail != ROB_head || ( ROB_state [2] != 0 ) == ( ROB_state [ ROB_head ] != 0 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_tail]
+#        invariant: "( !( ( 3'd3 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [3] != 0 ) && ( ( ( 3'd3 - ROB_head ) < ( ROB_tail - ROB_head ) ) || ROB_state [3] == 0 || ( ROB_tail == ROB_head && ROB_state [ ROB_head ] != 0 ) ) && ( ROB_tail != ROB_head || ( ROB_state [3] != 0 ) == ( ROB_state [ ROB_head ] != 0 ) )"
+#        condition: []
+
+# # Avoid instructions waiting for themselves
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_rs1_stall, ROB_rs2_stall, ROB_rs1_ROBlink, ROB_rs2_ROBlink]
+#        invariant: "ROB_state [0] == 0 || ( ( ! ROB_rs1_stall [0] || ( ( ROB_rs1_ROBlink [0] - ROB_head ) < ( 3'd0 - ROB_head ) ) ) && ( ! ROB_rs2_stall [0] || ( ( ROB_rs2_ROBlink [0] - ROB_head ) < ( 3'd0 - ROB_head ) ) ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_rs1_stall, ROB_rs2_stall, ROB_rs1_ROBlink, ROB_rs2_ROBlink]
+#        invariant: "ROB_state [1] == 0 || ( ( ! ROB_rs1_stall [1] || ( ( ROB_rs1_ROBlink [1] - ROB_head ) < ( 3'd1 - ROB_head ) ) ) && ( ! ROB_rs2_stall [1] || ( ( ROB_rs2_ROBlink [1] - ROB_head ) < ( 3'd1 - ROB_head ) ) ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_rs1_stall, ROB_rs2_stall, ROB_rs1_ROBlink, ROB_rs2_ROBlink]
+#        invariant: "ROB_state [2] == 0 || ( ( ! ROB_rs1_stall [2] || ( ( ROB_rs1_ROBlink [2] - ROB_head ) < ( 3'd2 - ROB_head ) ) ) && ( ! ROB_rs2_stall [2] || ( ( ROB_rs2_ROBlink [2] - ROB_head ) < ( 3'd2 - ROB_head ) ) ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_head, ROB_rs1_stall, ROB_rs2_stall, ROB_rs1_ROBlink, ROB_rs2_ROBlink]
+#        invariant: "ROB_state [3] == 0 || ( ( ! ROB_rs1_stall [3] || ( ( ROB_rs1_ROBlink [3] - ROB_head ) < ( 3'd3 - ROB_head ) ) ) && ( ! ROB_rs2_stall [3] || ( ( ROB_rs2_ROBlink [3] - ROB_head ) < ( 3'd3 - ROB_head ) ) ) )"
+#        condition: []
+
+# # Make sure the memory access bits are legal
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_mem_valid, ROB_mem_rdwt]
+#        invariant: "ROB_state [0] == 0 || ( ROB_mem_valid [0] == ( ROB_op [0] == 3'd3 || ROB_op [0] == 3'd4 ) && ROB_mem_rdwt [0] == ( ROB_op [0] == 3'd3 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_mem_valid, ROB_mem_rdwt]
+#        invariant: "ROB_state [1] == 0 || ( ROB_mem_valid [1] == ( ROB_op [1] == 3'd3 || ROB_op [1] == 3'd4 ) && ROB_mem_rdwt [1] == ( ROB_op [1] == 3'd3 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_mem_valid, ROB_mem_rdwt]
+#        invariant: "ROB_state [2] == 0 || ( ROB_mem_valid [2] == ( ROB_op [2] == 3'd3 || ROB_op [2] == 3'd4 ) && ROB_mem_rdwt [2] == ( ROB_op [2] == 3'd3 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_mem_valid, ROB_mem_rdwt]
+#        invariant: "ROB_state [3] == 0 || ( ROB_mem_valid [3] == ( ROB_op [3] == 3'd3 || ROB_op [3] == 3'd4 ) && ROB_mem_rdwt [3] == ( ROB_op [3] == 3'd3 ) )"
+#        condition: []
+
+#     # Control flags are consistent with the opcode in the ROB. 
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_is_br, ROB_wen, ROB_rd_data_use_execute]
+#        invariant: "ROB_state [0] == 0 || ( ROB_is_br [0] == ( ROB_op [0] == 3'd5 ) && ROB_wen [0] == ( ROB_op [0] <= 3'd3 ) && ROB_rd_data_use_execute [0] == ( ROB_op [0] <= 3'd2 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_is_br, ROB_wen, ROB_rd_data_use_execute]
+#        invariant: "ROB_state [1] == 0 || ( ROB_is_br [1] == ( ROB_op [1] == 3'd5 ) && ROB_wen [1] == ( ROB_op [1] <= 3'd3 ) && ROB_rd_data_use_execute [1] == ( ROB_op [1] <= 3'd2 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_is_br, ROB_wen, ROB_rd_data_use_execute]
+#        invariant: "ROB_state [2] == 0 || ( ROB_is_br [2] == ( ROB_op [2] == 3'd5 ) && ROB_wen [2] == ( ROB_op [2] <= 3'd3 ) && ROB_rd_data_use_execute [2] == ( ROB_op [2] <= 3'd2 ) )"
+#        condition: []
+
+#      - module: rob
+#        dataSignals: [ROB_state, ROB_op, ROB_is_br, ROB_wen, ROB_rd_data_use_execute]
+#        invariant: "ROB_state [3] == 0 || ( ROB_is_br [3] == ( ROB_op [3] == 3'd5 ) && ROB_wen [3] == ( ROB_op [3] <= 3'd3 ) && ROB_rd_data_use_execute [3] == ( ROB_op [3] <= 3'd2 ) )"
+#        condition: []
+
+microArchitecture:
+  # Memory where the program is stored (when not supported by Chipyard)
+
+  clock: clk
+  reset: rst
+
+  rollbackSignal: 
+    module: cpu_ooo
+    dataSignal: C_squash
+
+  bypassMem: 
+    Condition: false
+    Module: AsyncScratchPadMemory_2stage
+    dataSignal: mem_
+
+  # Memory where the program is stored
+  instructionMemory:
+    module: "memi"
+    dataSignal: "array"
+    addrSize: 8
+    instrSize: 6
+
+  # Memory where the secret is stored
+  dataMemory:
+    module: "memd"
+    dataSignal: "memd"
+    addrSize: 4
+    dataSize: 4
+    secret: 2
+
+  # ROB Information
+  ROB:
+    isROB: True       # Declare if we have ROB (basically if CPU is In order or Out-of-Order, if In order CPU, provide a lookahead)
+    lookahead: 30    # Maximum number of cycle an instruction can stay in the pipeline. This will be the unrolling of the design
+    module: rob
+    entries: 4
+    headSignal: ROB_head
+    tailSignal: ROB_tail
+    # NOTE: This part is made after checking Ridecore --> Need to ensure that this can be generalised to other superscalar processors.
+
+  COMMIT: 
+    module: cpu_ooo
+    commitBandWidth: 1   # is it a single issue or a super-scalar processor? 
+    commitNumSignal:     # Name of the commit signals (list size must match what is given in )commitBandWidth 
+      - C_valid           # It is assumed that the commit signal is true (1) when an instruction retires and false (0) when no instruction retires

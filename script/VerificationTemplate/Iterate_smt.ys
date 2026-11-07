@@ -1,0 +1,13 @@
+# yosys-smtbmc flow, run at EVERY Houdini iteration (replaces Iterate.ys).
+read_rtlil CONTRACT_NAME_MODE_all_pred_smt.il
+PREDICATE_DEVIATION
+
+#opt_expr
+#opt_clean
+
+opt -keepdc -fast
+
+async2sync
+dffunmap
+# -wires: every wire is visible in the counterexample VCD (predicates, deviations, gold./gate. signals)
+write_smt2 -wires CONTRACT_NAME_MODE.smt2

@@ -1,0 +1,11 @@
+
+plugin -i slang 
+plugin -i YOSYS_PASS_PATH/show_regs_mems.so
+read_slang --allow-use-before-declare VERILOG_MITER_OUT/single_design_verilog.v
+hierarchy -top TOPMODULE
+proc -norom
+flatten
+select TOPMODULE
+show_regs_mems -o VERIFICATION_PATH TOPMODULE
+memory -nomap
+write_verilog VERIFICATION_PATH/contractVerification.v

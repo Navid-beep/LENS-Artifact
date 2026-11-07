@@ -1,0 +1,268 @@
+designSrc: "src/Sodor2" # Path to all your src design files
+designTop: "SodorInternalTile_2stage"
+instructionSet: "user/ISA/simpleoooISA.yaml"
+targetPath: "results/Example_Sodor2_Houdini"
+
+programFile: "positiveExample.mem"
+secretAddressFile: "secret.mem"
+
+avrPath: ""
+
+designMacro: []   # Place the design that will be used with the Yosys script (if any or if relevant)
+
+experimentalParameters:
+  Synch_level: RegMemStuttering  # Select bewteen [HighLevelClock(stall), RegMemStuttering(stutter)]
+  Synch_method: direct   # Select between [indirect(shadowLogic), direct(leave)]
+  PipelineDrain: in-order # Select between [out-of-order, in-order]
+  Verification: Houdini  # Select between [rIC3, AVR, Houdini]
+  k: 1
+  Hierarchy: false
+  Solver: smtbmc            # rIC3 (default) | smtbmc
+  SMTSolver: yices          # passed to yosys-smtbmc -s (yices, z3, bitwuzla, boolector...)
+  SMTBMCPath: yosys-smtbmc  # optional, executable path
+  SMTBMCOptions: ""         # optional, extra yosys-smtbmc flags
+  HoudiniWires: true
+  HoudiniExclude: ["AsyncScratchPadMemory_2stage.mem_0_0", "AsyncScratchPadMemory_2stage.mem_1_0", "AsyncScratchPadMemory_2stage.mem_2_0", "AsyncScratchPadMemory_2stage.mem_3_0", "AsyncScratchPadMemory_2stage.mem_0_1", "AsyncScratchPadMemory_2stage.mem_1_1", "AsyncScratchPadMemory_2stage.mem_2_1", "AsyncScratchPadMemory_2stage.mem_3_1"]
+  
+contract:
+
+  contractObservation:
+    # Contract discards deviation of the source observation
+    - module: Core_2stage
+      dataSignal: Core_2stage.CtlPath_2stage.branch_taken
+      width: 32
+      condition:
+        - module: SodorInternalTile_2stage
+          dataSignal: Core_2stage.CtlPath_2stage.branch_inst   
+          condition: 1         
+          width: 1
+
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.pc_retire
+      condition: []
+
+    - module: AsyncScratchPadMemory_2stage
+      dataSignal: AsyncScratchPadMemory_2stage.instr_ctr
+      condition: []
+
+    - module: Core_2stage
+      dataSignal: Core_2stage.DatPath_2stage.io_dmem_req_bits_addr_ctr
+      condition: 
+        - module: Core_2stage
+          dataSignal: Core_2stage.CtlPath_2stage.io_dmem_req_valid_ctr 
+          condition: 1
+          width: 1
+
+
+  Predicate: []
+    # # When there is a load instruction, the data loaded should be the same
+    # - name: RDATA_inv
+    #   when: "( {cp}.Core_2stage.DatPath_2stage._exe_wbdata_T_1 ) && ( ! ( {cp}.Core_2stage.DatPath_2stage._exe_wbdata_T ) )"
+    #   invariant: "{cp}.AsyncScratchPadMemory_2stage.io_core_ports_0_resp_bits_data_module_io_data"
+    # # When the speculative fetch is correct, the instruction loaded should be the same
+    # - name: INSTR_inv
+    #   when: "( ! {cp}.Core_2stage.DatPath_2stage.io_ctl_if_kill_r )"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.exe_reg_inst"
+    # # disclose the value of the program counter
+    # - name: PC
+    #   when: "{cp}.Core_2stage.DatPath_2stage.fetch_reg"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.filtered_if_reg_pc"
+    # - name: PC1
+    #   when: "{cp}.Core_2stage.DatPath_2stage.fetch_reg && ( ! {cp}.Core_2stage.DatPath_2stage.io_ctl_if_kill )"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.if_reg_pc"
+    # - name: BRANCH
+    #   when: "{cp}.Core_2stage.DatPath_2stage._if_pc_next_T_1 && {cp}.Core_2stage.DatPath_2stage._T"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.exe_br_target"
+    # - name: PLUS4
+    #   when: "{cp}.Core_2stage.DatPath_2stage._if_pc_next_T && {cp}.Core_2stage.DatPath_2stage._T"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.if_pc_plus4"
+    # - name: JUMP
+    #   when: "( ! {cp}.Core_2stage.DatPath_2stage._if_pc_next_T ) && ( ! {cp}.Core_2stage.DatPath_2stage._if_pc_next_T_1 ) && {cp}.Core_2stage.DatPath_2stage._T"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage._if_pc_next_T_7"
+    # - name: BRANCH1
+    #   when: "{cp}.Core_2stage.DatPath_2stage.fetch"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage._T && {cp}.Core_2stage.DatPath_2stage._if_pc_next_T_1"
+    # - name: PLUS41
+    #   when: "{cp}.Core_2stage.DatPath_2stage.fetch"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage._T && {cp}.Core_2stage.DatPath_2stage._if_pc_next_T"
+    # - name: JUMP1
+    #   when: "{cp}.Core_2stage.DatPath_2stage.fetch"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage._T && ( ! {cp}.Core_2stage.DatPath_2stage._if_pc_next_T_1 ) && ( ! {cp}.Core_2stage.DatPath_2stage._if_pc_next_T )"
+    # - name: KILL
+    #   when: "{cp}.Core_2stage.DatPath_2stage.execute_reg"
+    #   invariant: "{cp}.Core_2stage.DatPath_2stage.io_ctl_if_kill"
+
+  AttackerObservation:
+  # Commit Observation
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.retire
+      width: 1
+      name: commit
+      condition: []
+
+
+
+  retirementPredicate:
+    # Instruction Retirement Signal
+      module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.retire
+      width: 1
+      condition: []
+
+functionalInvariant: 
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_imem_resp_bits_data]     # List of all signals present in the functional invariant
+       invariant: ( (Core_2stage.DatPath_2stage.io_imem_resp_bits_data == 32'h4033 ) == 0 )  # the plaintext function invariant you want to set
+       condition: []       
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.execute_reg, Core_2stage.DatPath_2stage.exe_reg_inst]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.execute_reg == 0 || ( Core_2stage.DatPath_2stage.exe_reg_inst == 32'h4033 ) == 0 )  # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_ctl_if_kill, Core_2stage.DatPath_2stage.if_reg_pc, Core_2stage.DatPath_2stage.exe_reg_pc]     # List of all signals present in the functional invariant
+       invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 ) || ( Core_2stage.DatPath_2stage.if_reg_pc == Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) )  # the plaintext function invariant you want to set
+       condition: []  
+      
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.exe_reg_pc]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.exe_reg_pc [1:0] == 0 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_ctl_if_kill_r, Core_2stage.DatPath_2stage.exe_reg_pc]     # List of all signals present in the functional invariant
+       invariant: ( ( ! Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.exe_reg_pc == 32'h0 ) ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.if_reg_pc]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.if_reg_pc [1:0] == 0 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_ctl_if_kill_r, Core_2stage.DatPath_2stage.if_reg_pc, Core_2stage.DatPath_2stage.exe_reg_pc]     # List of all signals present in the functional invariant
+       invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.if_reg_pc == Core_2stage.DatPath_2stage.exe_reg_pc + 32'h4 ) ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.if_inst_buffer_valid]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.if_inst_buffer_valid == 0 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_ctl_if_kill, Core_2stage.DatPath_2stage.execute_reg]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.io_ctl_if_kill == 0 || Core_2stage.DatPath_2stage.execute_reg == 1 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_dat_inst_misaligned]     # List of all signals present in the functional invariant
+       invariant: Core_2stage.DatPath_2stage.io_dat_inst_misaligned == 0 # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_dat_data_misaligned]     # List of all signals present in the functional invariant
+       invariant: Core_2stage.DatPath_2stage.io_dat_data_misaligned == 0 # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.io_ctl_if_kill_r, Core_2stage.DatPath_2stage.exe_reg_inst, AsyncScratchPadMemory_2stage.instr_exe]     # List of all signals present in the functional invariant
+       invariant: ( ( Core_2stage.DatPath_2stage.io_ctl_if_kill_r ) || ( Core_2stage.DatPath_2stage.exe_reg_inst == AsyncScratchPadMemory_2stage.instr_exe ) ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.exe_reg_inst ]     # List of all signals present in the functional invariant
+       invariant: ( (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h37 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h17 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h6f ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h67 ) ||(Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h63 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h3 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h23 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h13 ) || (Core_2stage.DatPath_2stage.exe_reg_inst [6:0] == 7'h33 && (Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h0 || Core_2stage.DatPath_2stage.exe_reg_inst [31:25] == 7'h20 ) ) ) # the plaintext function invariant you want to set
+       noInit: true
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.CtlPath_2stage.io_ctl_exception]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.CtlPath_2stage.io_ctl_exception == 0 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.CSRFile_2stage.io_eret == 0 ) # the plaintext function invariant you want to set
+       condition: []  
+
+     - module: 
+       dataSignals: [Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt]     # List of all signals present in the functional invariant
+       invariant: ( Core_2stage.DatPath_2stage.CSRFile_2stage.io_interrupt == 0 ) # the plaintext function invariant you want to set
+       condition: [] 
+
+microArchitecture:
+  # Memory where the program is stored (when not supported by Chipyard)
+
+  clock: clock
+  reset: reset
+
+  rollbackSignal: 
+    module: DatPath_2stage
+    dataSignal: Core_2stage.DatPath_2stage.io_ctl_if_kill
+
+  InitialState:
+    # DatPath_2stage
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.if_reg_pc_delay
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.retire
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.fetch_reg
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage._exe_wbdata_T_1_delay
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage._exe_wbdata_T_delay
+    - module: DatPath_2stage
+      dataSignal: Core_2stage.DatPath_2stage.exe_reg_inst_delay
+
+    # AsyncScratchPadMemory_2stage
+    - module: AsyncScratchPadMemory_2stage
+      dataSignal: AsyncScratchPadMemory_2stage.module__io_en_delay
+    - module: AsyncScratchPadMemory_2stage
+      dataSignal: AsyncScratchPadMemory_2stage.module__io_addr_delay
+    - module: AsyncScratchPadMemory_2stage
+      dataSignal: AsyncScratchPadMemory_2stage.io_core_ports_0_resp_bits_data_module_io_addr_delay
+    - module: AsyncScratchPadMemory_2stage
+      dataSignal: AsyncScratchPadMemory_2stage.io_core_ports_0_resp_bits_data_module_io_data_delay
+
+    # Top-level signals (no submodule in the path)
+    - dataSignal: core_io_dmem_req_bits_addr
+    - dataSignal: core_io_dmem_req_valid
+
+  # Make the whole memory symbolic
+  bypassMem: 
+    Condition: True
+    Module: AsyncScratchPadMemory_2stage
+    dataSignal: mem_
+
+  # Memory where the program is stored
+  instructionMemory:
+    module: "AsyncScratchPadMemory_2stage"
+    dataSignal: "mem_*"
+    addrSize: 2
+    instrSize: 6
+
+  # Memory where the secret is stored
+  dataMemory: 
+    module: "AsyncScratchPadMemory_2stage"
+    dataSignal: "memd"
+    addrSize: 4
+    dataSize: 4
+    secret: 2
+
+  # ROB Information
+  ROB:
+    isROB: false       # Declare if we have ROB (basically if CPU is In order or Out-of-Order, if In order CPU, provide a lookahead)
+    lookahead: 2     # Maximum number of cycle an instruction can stay in the pipeline. This will be the unrolling of the design
+    module: rob
+    entries: 2
+    headSignal: ROB_head
+    tailSignal: ROB_tail
+    # NOTE: This part is made after checking Ridecore --> Need to ensure that this can be generalised to other superscalar processors.
+
+  COMMIT: 
+    # module: DatPath_2stage
+    commitBandWidth: 1   # is it a single issue or a super-scalar processor? 
+    commitNumSignal:     # Name of the commit signals (list size must match what is given in )commitBandWidth 
+      - Core_2stage.DatPath_2stage.pc_retire           # It is assumed that the commit signal is true (1) when an instruction retires and false (0) when no instruction retires

@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang --single-unit --allow-use-before-declare --allow-merging-ansi-ports \
+           --best-effort-hierarchy --error-limit=0  ../src/simpleooo_cache_secure/memd.v ../src/simpleooo_cache_secure/cpu_ooo.v ../src/simpleooo_cache_secure/rf.v ../src/simpleooo_cache_secure/param.v ../src/simpleooo_cache_secure/decode.v ../src/simpleooo_cache_secure/rob_nda.v ../src/simpleooo_cache_secure/execute.v ../src/simpleooo_cache_secure/memi.v ../src/simpleooo_cache_secure/renameTable.v #read_verilog -sv -formal   ../src/simpleooo_cache_secure/memd.v ../src/simpleooo_cache_secure/cpu_ooo.v ../src/simpleooo_cache_secure/rf.v ../src/simpleooo_cache_secure/param.v ../src/simpleooo_cache_secure/decode.v ../src/simpleooo_cache_secure/rob_nda.v ../src/simpleooo_cache_secure/execute.v ../src/simpleooo_cache_secure/memi.v ../src/simpleooo_cache_secure/renameTable.v  
+hierarchy -top cpu_ooo -keep_positionals
+proc -norom -noopt
+write_json results/UASC_SOOO_Cache_Sec_IBM_Clk2ff/Hierarchy/duv_structure.json

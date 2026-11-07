@@ -1,0 +1,9 @@
+read_rtlil CONTRACT_NAME_MODE_all_pred.il
+PREDICATE_DEVIATION
+opt -keepdc -fast
+write_rtlil CONTRACT_NAME_MODE_pre_aiger.il
+techmap
+dffunmap
+abc -g AND -fast
+#write_aiger -I -B -zinit -no-startoffset -map CONTRACT_NAME_MODE.aim -ywmap CONTRACT_NAME_MODE.ywa CONTRACT_NAME_MODE.aig
+write_aiger -zinit -map CONTRACT_NAME_MODE.aim -ywmap CONTRACT_NAME_MODE.ywa CONTRACT_NAME_MODE.aig

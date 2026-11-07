@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang -Wno-duplicate-definition --allow-use-before-declare  ../src/Sodor2/sodor2.v  
+hierarchy -top SodorInternalTile_2stage -keep_positionals
+proc -norom -noopt
+reg_mem_init SodorInternalTile_2stage results/UASC_Houdini_Sodor2_IB_smtbmc/Hierarchy
+write_verilog results/UASC_Houdini_Sodor2_IB_smtbmc/Hierarchy/duv_structure.v

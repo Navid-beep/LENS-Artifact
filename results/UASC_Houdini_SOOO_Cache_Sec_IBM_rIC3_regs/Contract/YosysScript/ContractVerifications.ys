@@ -1,0 +1,38 @@
+
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+
+#read_verilog -sv  ../src/simpleooo_cache_secure/memd.v ../src/simpleooo_cache_secure/cpu_ooo.v ../src/simpleooo_cache_secure/rf.v ../src/simpleooo_cache_secure/param.v ../src/simpleooo_cache_secure/decode.v ../src/simpleooo_cache_secure/rob_nda.v ../src/simpleooo_cache_secure/execute.v ../src/simpleooo_cache_secure/memi.v ../src/simpleooo_cache_secure/renameTable.v  
+read_slang --allow-use-before-declare  ../src/simpleooo_cache_secure/memd.v ../src/simpleooo_cache_secure/cpu_ooo.v ../src/simpleooo_cache_secure/rf.v ../src/simpleooo_cache_secure/param.v ../src/simpleooo_cache_secure/decode.v ../src/simpleooo_cache_secure/rob_nda.v ../src/simpleooo_cache_secure/execute.v ../src/simpleooo_cache_secure/memi.v ../src/simpleooo_cache_secure/renameTable.v  
+hierarchy -top cpu_ooo
+proc -norom -noopt
+bwmuxmap
+write_verilog results/UASC_Houdini_SOOO_Cache_Sec_IBM_rIC3_regs/Contract/Verilog/single_design_verilog.v 
+add -input stuttering_signal 1
+flatten cpu_ooo
+stuttering cpu_ooo stuttering_signal 
+
+miter -equiv cpu_ooo cpu_ooo miter_cpu_ooo
+hierarchy -top miter_cpu_ooo
+proc -norom -noopt
+cd miter_cpu_ooo
+delete -input in_stuttering_signal
+cd ..
+
+# test
+
+select -set strip miter_cpu_ooo/i:* miter_cpu_ooo/w:in_clk %d
+setattr -set keep 1 @strip
+delete -port @strip
+setundef -undriven -zero @strip      # all of them to 0
+
+# end test
+miter_stuttering miter_cpu_ooo stuttering_signal C_valid
+flatten 
+async2sync
+dffunmap
+bwmuxmap
+reg_mem_init miter_cpu_ooo .
+write_verilog results/UASC_Houdini_SOOO_Cache_Sec_IBM_rIC3_regs/Contract/Verilog/contractVerification_verilog.v 

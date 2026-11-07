@@ -1,0 +1,30 @@
+plugin -i slang 
+plugin -i YosysPass/bin/Stalling.so 
+plugin -i YosysPass/bin/RegMemInitPass.so
+
+
+#read_verilog -sv  ../src/Sodor2/sodor2.v  
+read_slang --allow-use-before-declare  ../src/Sodor2/sodor2.v  
+hierarchy -top SodorInternalTile_2stage
+proc -norom -noopt
+flatten SodorInternalTile_2stage 
+bwmuxmap
+write_verilog results/UASC_Sodor2_IB_Clk2ff/Contract/Verilog/single_design_verilog.v 
+miter -equiv SodorInternalTile_2stage SodorInternalTile_2stage miter_SodorInternalTile_2stage
+cd miter_SodorInternalTile_2stage
+cd ..
+
+select -set strip miter_SodorInternalTile_2stage/i:* miter_SodorInternalTile_2stage/w:in_clock %d
+setattr -set keep 1 @strip
+delete -port @strip
+setundef -undriven -zero @strip      # all of them to 0
+
+stalling SodorInternalTile_2stage clock stall_signal
+hierarchy -top miter_SodorInternalTile_2stage
+proc -norom -noopt
+flatten #-nocleanup miter_SodorInternalTile_2stage 
+async2sync
+dffunmap
+reg_mem_init miter_SodorInternalTile_2stage .
+bwmuxmap
+write_verilog results/UASC_Sodor2_IB_Clk2ff/Contract/Verilog/contractVerification_verilog.v 

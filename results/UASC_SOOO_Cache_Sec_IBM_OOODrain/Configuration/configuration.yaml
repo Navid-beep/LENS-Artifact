@@ -1,0 +1,100 @@
+avrPath: ''
+contract:
+  AttackerObservation:
+  - condition: []
+    dataSignal: rob_instance.C_valid
+    module: rob
+    width: 1
+  - condition: []
+    dataSignal: rob_instance.ld_addr
+    module: rob
+    width: 2
+  ProgramEquivalence:
+  - condition: []
+    dataSignal: F_inst
+    module: cpu_ooo
+    width: 11
+  contractObservation:
+  - condition:
+    - condition: 1
+      dataSignal: C_mem_valid
+      module: cpu_ooo
+      width: 1
+    - condition: 1
+      dataSignal: C_mem_rdwt
+      module: cpu_ooo
+      width: 1
+    dataSignal: C_mem_addr
+    module: cpu_ooo
+    width: 2
+  - condition:
+    - condition: 1
+      dataSignal: C_is_br
+      module: cpu_ooo
+      width: 1
+    dataSignal: C_taken
+    module: cpu_ooo
+    width: 1
+  retirementPredicate:
+    condition: []
+    dataSignal: rob_instance.C_valid
+    module: cpu_ooo
+    width: 1
+designMacro: []
+designSrc: ../src/simpleooo_cache_secure
+designTop: cpu_ooo
+experimentalParameters:
+  Hierarchy: true
+  PipelineDrain: out-of-order
+  Program: false
+  Synch_level: RegMemStuttering
+  Synch_method: direct
+  Verification: rIC3
+functionalInvariant:
+- condition: []
+  dataSignals:
+  - F_opcode
+  gateInvariant: \gate.F_opcode == 0 || \gate.F_opcode == 1 || \gate.F_opcode == 2
+    || \gate.F_opcode == 3 || \gate.F_opcode == 4 || \gate.F_opcode == 5
+  goldInvariant: \gold.F_opcode == 0 || \gold.F_opcode == 1 || \gold.F_opcode == 2
+    || \gold.F_opcode == 3 || \gold.F_opcode == 4 || \gold.F_opcode == 5
+  invariant: F_opcode == 0 || F_opcode == 1 || F_opcode == 2 || F_opcode == 3 || F_opcode
+    == 4 || F_opcode == 5
+  module: cpu_ooo
+instructionSet: user/ISA/simpleoooISA.yaml
+microArchitecture:
+  COMMIT:
+    commitBandWidth: 1
+    commitNumSignal:
+    - C_valid
+    module: cpu_ooo
+  ROB:
+    entries: 4
+    headSignal: rob_instance.ROB_head
+    isROB: true
+    lookahead: 30
+    module: rob
+    tailSignal: rob_instance.ROB_tail
+  bypassMem:
+    Condition: false
+    Module: AsyncScratchPadMemory_2stage
+    dataSignal: mem_
+  clock: clk
+  dataMemory:
+    addrSize: 4
+    dataSignal: memd_instance.memd
+    dataSize: 4
+    module: memd
+    secret: 2
+  instructionMemory:
+    addrSize: 8
+    dataSignal: memi_instance.array_mem
+    instrSize: 11
+    module: memi
+  reset: rst
+  rollbackSignal:
+    dataSignal: C_squash
+    module: cpu_ooo
+programFile: positiveExample.mem
+secretAddressFile: secret.mem
+targetPath: results/UASC_SOOO_Cache_Sec_IBM_OOODrain

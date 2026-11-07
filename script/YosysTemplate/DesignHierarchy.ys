@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YOSYS_PASS_PATH/MiterStutteringPass.so 
+plugin -i YOSYS_PASS_PATH/stuttering.so
+plugin -i YOSYS_PASS_PATH/RegMemInitPass.so
+plugin -i YOSYS_PASS_PATH/show_regs_mems.so
+
+read_slang --single-unit --allow-use-before-declare --allow-merging-ansi-ports \
+           --best-effort-hierarchy --error-limit=0 MACRO VERILOG_FILES#read_verilog -sv -formal  MACRO VERILOG_FILES 
+hierarchy -top TOPMODULE -keep_positionals
+proc -norom -noopt
+write_json HIERARCHY/duv_structure.json

@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YosysPass/bin/MiterStutteringPass.so 
+plugin -i YosysPass/bin/stuttering.so
+plugin -i YosysPass/bin/RegMemInitPass.so
+plugin -i YosysPass/bin/show_regs_mems.so
+
+read_slang --single-unit --allow-use-before-declare --allow-merging-ansi-ports \
+           --best-effort-hierarchy --error-limit=0  ../src/PitfallsMachine/memd.v ../src/PitfallsMachine/cpu_ooo.v ../src/PitfallsMachine/rf.v ../src/PitfallsMachine/param.v ../src/PitfallsMachine/decode.v ../src/PitfallsMachine/rob_nda.v ../src/PitfallsMachine/execute.v ../src/PitfallsMachine/memi.v ../src/PitfallsMachine/renameTable.v #read_verilog -sv -formal   ../src/PitfallsMachine/memd.v ../src/PitfallsMachine/cpu_ooo.v ../src/PitfallsMachine/rf.v ../src/PitfallsMachine/param.v ../src/PitfallsMachine/decode.v ../src/PitfallsMachine/rob_nda.v ../src/PitfallsMachine/execute.v ../src/PitfallsMachine/memi.v ../src/PitfallsMachine/renameTable.v  
+hierarchy -top cpu_ooo -keep_positionals
+proc -norom -noopt
+write_json results/Pitfalls_SyncSeq_GC_ContComb/Hierarchy/duv_structure.json

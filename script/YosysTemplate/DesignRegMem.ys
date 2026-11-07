@@ -1,0 +1,11 @@
+plugin -i slang 
+plugin -i YOSYS_PASS_PATH/MiterStutteringPass.so 
+plugin -i YOSYS_PASS_PATH/stuttering.so
+plugin -i YOSYS_PASS_PATH/RegMemInitPass.so
+plugin -i YOSYS_PASS_PATH/show_regs_mems.so
+
+read_slang -Wno-duplicate-definition --allow-use-before-declare MACRO VERILOG_FILES 
+hierarchy -top TOPMODULE -keep_positionals
+proc -norom -noopt
+reg_mem_init TOPMODULE HIERARCHY
+write_verilog HIERARCHY/duv_structure.v

@@ -1,0 +1,126 @@
+
+designSrc: "src/simpleooo_cache_secure" # Path to all your src design files
+designTop: "cpu_ooo"
+instructionSet: "user/ISA/simpleoooISA.yaml"
+targetPath: "results/UASC_SOOO_Cache_Sec_IBM_Clk2ff"
+
+programFile: "positiveExample.mem"
+secretAddressFile: "secret.mem"
+
+avrPath: ""
+
+designMacro: []   # Place the design that will be used with the Yosys script (if any or if relevant)
+
+experimentalParameters:
+  Synch_level: HighLevelClock  # Select bewteen [HighLevelClock(stall), RegMemStuttering(stutter)]
+  Synch_method: indirect   # Select between [indirect(shadowLogic), direct(leave)]
+  PipelineDrain: in-order # Select between [out-of-order, in-order]
+  Verification: rIC3  # Select between [rIC3, AVR, Houdini]
+  Hierarchy: true
+  Program: false
+
+contract:
+
+  contractObservation: 
+    # Contract discards deviation of the source observation
+    - module: cpu_ooo
+      dataSignal: C_mem_addr
+      width: 2
+      condition:
+        - module: cpu_ooo
+          dataSignal: C_mem_valid   
+          condition: 1         
+          width: 1
+        - module: cpu_ooo
+          dataSignal: C_mem_rdwt
+          condition: 1
+          width: 1    
+
+    - module: cpu_ooo
+      dataSignal: C_taken
+      width: 1
+      condition:
+        - module: cpu_ooo
+          dataSignal: C_is_br
+          condition: 1
+          width: 1
+          
+
+  ProgramEquivalence:
+    - module: memi
+      dataSignal: array_mem
+      width: 11
+      range: 8
+      condition: []
+
+
+
+  AttackerObservation:
+  # Commit Observation
+    - module: rob
+      dataSignal: C_valid
+      width: 1
+      name: commit
+      condition: []
+
+
+  retirementPredicate:
+    # Instruction Retirement Signal
+      module: cpu_ooo
+      dataSignal: C_valid
+      width: 1
+      condition: []
+
+functionalInvariant: 
+     - module: cpu_ooo  
+       dataSignals: [F_opcode]     # List of all signals present in the functional invariant
+       invariant: F_opcode == 0 || F_opcode == 1 || F_opcode == 2 || F_opcode == 3 || F_opcode == 4 || F_opcode == 5  # the plaintext function invariant you want to set
+       condition: []  
+
+
+microArchitecture:
+  # Memory where the program is stored (when not supported by Chipyard)
+
+  clock: clk
+  reset: rst
+
+  rollbackSignal: 
+    module: cpu_ooo
+    dataSignal: C_squash
+
+  bypassMem: 
+    Condition: false
+    Module: AsyncScratchPadMemory_2stage
+    dataSignal: mem_
+
+
+  # Memory where the program is stored
+  instructionMemory:
+    module: "memi"
+    dataSignal: "array_mem"
+    addrSize: 8
+    instrSize: 11
+
+  # Memory where the secret is stored
+  dataMemory:
+    module: "memd"
+    dataSignal: "memd"
+    addrSize: 4
+    dataSize: 4
+    secret: 2
+
+  # ROB Information
+  ROB:
+    isROB: True       # Declare if we have ROB (basically if CPU is In order or Out-of-Order, if In order CPU, provide a lookahead)
+    lookahead: 30     # Maximum number of cycle an instruction can stay in the pipeline. This will be the unrolling of the design
+    module: rob
+    entries: 4
+    headSignal: ROB_head
+    tailSignal: ROB_tail
+    # NOTE: This part is made after checking Ridecore --> Need to ensure that this can be generalised to other superscalar processors.
+
+  COMMIT: 
+    module: cpu_ooo
+    commitBandWidth: 1   # is it a single issue or a super-scalar processor? 
+    commitNumSignal:     # Name of the commit signals (list size must match what is given in )commitBandWidth 
+      - C_valid           # It is assumed that the commit signal is true (1) when an instruction retires and false (0) when no instruction retires
