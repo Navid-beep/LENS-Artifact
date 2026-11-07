@@ -23,11 +23,11 @@ YAML files specify the design-specific variables, the contract observations, the
 ## Dependencies
 
 - Python 3.8 or higher with PyYAML
-- Yosys TODO (developed with 0.60+)
-- [yosys-slang](https://github.com/povik/yosys-slang) TODO: version.
+- Yosys (developed with 0.60+)
+- [yosys-slang](https://github.com/povik/yosys-slang)
 - [SBY (SymbiYosys)](https://github.com/YosysHQ/sby)
 - rIC3 (https://github.com/gipsyh/rIC3)
-- yosys-smtbmc (ships with Yosys) and an SMT solver (yices2 by default; TODO: version), only needed for `Solver: smtbmc`
+- yosys-smtbmc (ships with Yosys) and an SMT solver (yices2 by default;), only needed for `Solver: smtbmc`
 
 Everything else the scripts use is part of the Python standard library.
 
@@ -80,9 +80,10 @@ For example:
    ```bash
    python3 script/ContractVerification.py user/configuration/Example_simpleooo.yaml
    ```
-   `TODO: <targetPath>/Verification/Houdini/houdini.log` should end with the verification passing (`PASS`).
 
 Each run writes the following to `<targetPath>/Verification/Houdini/`:
+
+To generate the VCD file when a counterexample is found, run the same command with `--VCD`
 
 ## Reproducing the results from the paper
 
