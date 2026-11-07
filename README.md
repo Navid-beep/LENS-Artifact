@@ -81,9 +81,9 @@ For example:
    python3 script/ContractVerification.py user/configuration/Example_simpleooo.yaml
    ```
 
-Each run writes the following to `<targetPath>/Verification/Houdini/`:
+Each run writes the verification logs to `<targetPath>/Verification/`:
 
-To generate the VCD file when a counterexample is found, run the same command with `--VCD`
+To generate the VCD file when a counterexample is found when using rIC3, run the verification command with `--VCD`
 
 ## Reproducing the results from the paper
 
